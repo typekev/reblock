@@ -1,0 +1,16 @@
+{
+  "name": "reblock",
+  "version": "0.0.1",
+  "description":
+    "A tiny library to help anyone understand the basics of Blockchain",
+  "main": "index.js",
+  "repository": "https://github.com/typekev/reblock",
+  "author": "Kevin Gonzalez",
+  "license": "MIT",
+  "dependencies": {
+    "react": "^15.6.1",
+    "react-dom": "^15.6.1",
+    "moment": "^2.21.0",
+    "crypto-js": "^3.1.9-1"
+  }
+}
