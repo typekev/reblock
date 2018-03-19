@@ -89,7 +89,13 @@ class Blockchain extends React.Component {
 
   isChainValid = () => {
     const { distributedChain } = this.state;
-    const { chain, notify = () => {} } = this.props;
+    const {
+      chain,
+      notify = () => {},
+      chainAlteredErrorMessage,
+      chainLengthErrorMessage,
+      chainValidMessage
+    } = this.props;
     const prevBlock = this.getLatestBlock();
 
     for (let i = 1; i < chain.length; i++) {
@@ -106,20 +112,27 @@ class Blockchain extends React.Component {
         currentBlock.previousHash !== previousBlock.hash ||
         distributedChain.length !== chain.length
       ) {
-        notify({
-          title: "Woah!",
-          message:
-            distributedChain.length !== chain.length
-              ? "Hold on, your chain does not match the other chains on the network.."
-              : `This chain has been altered from it's original state. Check block: ${i}`
-        });
+        notify(
+          distributedChain.length === chain.length
+            ? chainAlteredErrorMessage || {
+                title: "Woah!",
+                message: `This chain has been altered from it's original state. Check block: ${i}`
+              }
+            : chainLengthErrorMessage || {
+                title: "Woah!",
+                message:
+                  "Hold on, your chain does not match the other chains on the network.."
+              }
+        );
         return false;
       }
     }
-    notify({
-      title: "Great!",
-      message: "All the blocks in this chain are valid."
-    });
+    notify(
+      chainValidMessage || {
+        title: "Great!",
+        message: "All the blocks in this chain are valid."
+      }
+    );
     return true;
   };
 
