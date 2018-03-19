@@ -1,5 +1,4 @@
 import React from "react";
-import moment from "moment";
 import sha256 from "crypto-js/sha256";
 
 import DefaultBlock from "../DefaultBlock";
@@ -15,29 +14,25 @@ class Blockchain extends React.Component {
   }
 
   componentWillMount() {
-    this.createGenesisBlock();
+    this.addBlock();
   }
 
-  calculateHash = props => {
-    const { index, timestamp, data, previousHash = "", nonce } = props;
-    return sha256(
-      index + previousHash + timestamp + JSON.stringify(data) + nonce
-    ).toString();
-  };
-
-  getCurrentTime = () => moment().format("LL h:mm:ss:SSS A");
+  calculateHash = blockData => sha256(JSON.stringify(blockData)).toString();
 
   createGenesisBlock = () => {
-    const { chain, updateChain } = this.props;
+    const { chain, updateChain, getBlockObject } = this.props;
+    const genesisBlock = {
+      ...getBlockObject({ index: 0 }),
+      index: 0,
+      previousHash: ""
+    };
+    const generatedBlockData = this.mineBlock(genesisBlock);
+
     updateChain(
       [...chain].concat([
         {
-          index: 0,
-          timestamp: this.getCurrentTime(),
-          data: "Genesis block",
-          previousHash: "0",
-          hash: "0",
-          nonce: 0
+          ...genesisBlock,
+          ...generatedBlockData
         }
       ])
     );
@@ -51,19 +46,18 @@ class Blockchain extends React.Component {
 
   addBlock = () => {
     const { distributedChain } = this.state;
-    const { chain, updateChain } = this.props;
+    const { chain, updateChain, getBlockObject } = this.props;
 
     if (chain.length < 1) {
       this.createGenesisBlock();
-      return false;
+      return;
     }
 
     const latestBlock = this.getLatestBlock();
 
     const newBlockData = {
+      ...getBlockObject({ index: latestBlock.index + 1 }),
       index: latestBlock.index + 1,
-      timestamp: this.getCurrentTime(),
-      data: "You have recieved " + (latestBlock.index + 1) + " Devocoin",
       previousHash: latestBlock.hash
     };
 
@@ -83,14 +77,13 @@ class Blockchain extends React.Component {
   mineBlock = block => {
     const latestBlock = this.getLatestBlock();
     const { difficulty } = this.state;
-    let nonce = latestBlock.nonce;
+    let nonce = latestBlock ? latestBlock.nonce : 0;
     let hash = this.calculateHash(block);
     while (hash.substring(0, difficulty) !== Array(difficulty + 1).join("0")) {
       nonce++;
       hash = this.calculateHash({ ...block, nonce });
-      console.log("NONCE: " + nonce, "HASH: " + hash);
     }
-
+    console.log("currentBlockData HASH ADDNEW", { ...block, nonce });
     return { hash, nonce };
   };
 
@@ -98,14 +91,18 @@ class Blockchain extends React.Component {
     const { distributedChain } = this.state;
     const { chain, notify = () => {} } = this.props;
     const prevBlock = this.getLatestBlock();
-    console.log(chain);
 
     for (let i = 1; i < chain.length; i++) {
       const currentBlock = chain[i];
       const previousBlock = chain[i - 1];
-
+      const {
+        hash: currentBlockHash,
+        nonce,
+        ...currentBlockData
+      } = currentBlock;
       if (
-        currentBlock.hash !== this.calculateHash(currentBlock) ||
+        currentBlockHash !==
+          this.calculateHash({ ...currentBlockData, nonce }) ||
         currentBlock.previousHash !== previousBlock.hash ||
         distributedChain.length !== chain.length
       ) {
