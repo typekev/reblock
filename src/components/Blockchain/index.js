@@ -39,10 +39,6 @@ var _react = require("react");
 
 var _react2 = _interopRequireDefault(_react);
 
-var _moment = require("moment");
-
-var _moment2 = _interopRequireDefault(_moment);
-
 var _sha = require("crypto-js/sha256");
 
 var _sha2 = _interopRequireDefault(_sha);
@@ -53,6 +49,16 @@ var _DefaultBlock2 = _interopRequireDefault(_DefaultBlock);
 
 function _interopRequireDefault(obj) {
   return obj && obj.__esModule ? obj : { default: obj };
+}
+
+function _objectWithoutProperties(obj, keys) {
+  var target = {};
+  for (var i in obj) {
+    if (keys.indexOf(i) >= 0) continue;
+    if (!Object.prototype.hasOwnProperty.call(obj, i)) continue;
+    target[i] = obj[i];
+  }
+  return target;
 }
 
 function _toConsumableArray(arr) {
@@ -107,6 +113,7 @@ function _inherits(subClass, superClass) {
 var Blockchain = (function(_React$Component) {
   _inherits(Blockchain, _React$Component);
 
+  // eslint-disable-line react/prefer-stateless-function
   function Blockchain(props) {
     _classCallCheck(this, Blockchain);
 
@@ -118,7 +125,150 @@ var Blockchain = (function(_React$Component) {
       )
     );
 
-    _initialiseProps.call(_this);
+    _this.calculateHash = function(blockData) {
+      return (0, _sha2.default)(JSON.stringify(blockData)).toString();
+    };
+
+    _this.createGenesisBlock = function() {
+      var _this$props = _this.props,
+        chain = _this$props.chain,
+        updateChain = _this$props.updateChain,
+        getBlockObject = _this$props.getBlockObject;
+
+      var genesisBlock = _extends({}, getBlockObject({ index: 0 }), {
+        index: 0,
+        previousHash: ""
+      });
+      var generatedBlockData = _this.mineBlock(genesisBlock);
+
+      updateChain(
+        []
+          .concat(_toConsumableArray(chain))
+          .concat([_extends({}, genesisBlock, generatedBlockData)])
+      );
+    };
+
+    _this.getLatestBlock = function() {
+      var chain = _this.props.chain;
+
+      var latestBlock = chain[chain.length - 1];
+      return latestBlock;
+    };
+
+    _this.addBlock = function() {
+      var distributedChain = _this.state.distributedChain;
+      var _this$props2 = _this.props,
+        chain = _this$props2.chain,
+        updateChain = _this$props2.updateChain,
+        getBlockObject = _this$props2.getBlockObject;
+
+      if (chain.length < 1) {
+        _this.createGenesisBlock();
+        return;
+      }
+
+      var latestBlock = _this.getLatestBlock();
+
+      var newBlockData = _extends(
+        {},
+        getBlockObject({ index: latestBlock.index + 1 }),
+        {
+          index: latestBlock.index + 1,
+          previousHash: latestBlock.hash
+        }
+      );
+
+      var generatedBlockData = _this.mineBlock(newBlockData);
+
+      var newBlock = _extends({}, newBlockData, generatedBlockData);
+
+      updateChain([].concat(_toConsumableArray(chain)).concat([newBlock]));
+      _this.setState({
+        distributedChain:
+          distributedChain.length < 1
+            ? [].concat(_toConsumableArray(chain)).concat([newBlock])
+            : [].concat(_toConsumableArray(distributedChain)).concat([newBlock])
+      });
+    };
+
+    _this.mineBlock = function(block) {
+      var latestBlock = _this.getLatestBlock();
+      var difficulty = _this.state.difficulty;
+
+      var nonce = latestBlock ? latestBlock.nonce : 0;
+      var hash = _this.calculateHash(block);
+      while (
+        hash.substring(0, difficulty) !== Array(difficulty + 1).join("0")
+      ) {
+        nonce++;
+        hash = _this.calculateHash(_extends({}, block, { nonce: nonce }));
+      }
+      console.log(
+        "currentBlockData HASH ADDNEW",
+        _extends({}, block, { nonce: nonce })
+      );
+      return { hash: hash, nonce: nonce };
+    };
+
+    _this.isChainValid = function() {
+      var distributedChain = _this.state.distributedChain;
+      var _this$props3 = _this.props,
+        chain = _this$props3.chain,
+        _this$props3$notify = _this$props3.notify,
+        notify =
+          _this$props3$notify === undefined
+            ? function() {}
+            : _this$props3$notify;
+
+      var prevBlock = _this.getLatestBlock();
+
+      for (var i = 1; i < chain.length; i++) {
+        var currentBlock = chain[i];
+        var previousBlock = chain[i - 1];
+
+        var currentBlockHash = currentBlock.hash,
+          nonce = currentBlock.nonce,
+          currentBlockData = _objectWithoutProperties(currentBlock, [
+            "hash",
+            "nonce"
+          ]);
+
+        if (
+          currentBlockHash !==
+            _this.calculateHash(
+              _extends({}, currentBlockData, { nonce: nonce })
+            ) ||
+          currentBlock.previousHash !== previousBlock.hash ||
+          distributedChain.length !== chain.length
+        ) {
+          notify({
+            title: "Woah!",
+            message:
+              distributedChain.length !== chain.length
+                ? "Hold on, your chain does not match the other chains on the network.."
+                : "This chain has been altered from it's original state. Check block: " +
+                  i
+          });
+          return false;
+        }
+      }
+      notify({
+        title: "Great!",
+        message: "All the blocks in this chain are valid."
+      });
+      return true;
+    };
+
+    _this.deleteBlock = function(index) {
+      var _this$props4 = _this.props,
+        chain = _this$props4.chain,
+        updateChain = _this$props4.updateChain;
+
+      var filteredChain = chain.filter(function(block) {
+        return block.index !== index;
+      });
+      updateChain(filteredChain);
+    };
 
     _this.state = {
       distributedChain: [],
@@ -131,7 +281,7 @@ var Blockchain = (function(_React$Component) {
     {
       key: "componentWillMount",
       value: function componentWillMount() {
-        this.createGenesisBlock();
+        this.addBlock();
       }
     },
     {
@@ -188,150 +338,6 @@ var Blockchain = (function(_React$Component) {
 
   return Blockchain;
 })(_react2.default.Component);
-
-var _initialiseProps = function _initialiseProps() {
-  var _this3 = this;
-
-  this.calculateHash = function(props) {
-    var index = props.index,
-      timestamp = props.timestamp,
-      data = props.data,
-      _props$previousHash = props.previousHash,
-      previousHash =
-        _props$previousHash === undefined ? "" : _props$previousHash,
-      nonce = props.nonce;
-
-    return (0, _sha2.default)(
-      index + previousHash + timestamp + JSON.stringify(data) + nonce
-    ).toString();
-  };
-
-  this.getCurrentTime = function() {
-    return (0, _moment2.default)().format("LL h:mm:ss:SSS A");
-  };
-
-  this.createGenesisBlock = function() {
-    var _props3 = _this3.props,
-      chain = _props3.chain,
-      updateChain = _props3.updateChain;
-
-    updateChain(
-      [].concat(_toConsumableArray(chain)).concat([
-        {
-          index: 0,
-          timestamp: _this3.getCurrentTime(),
-          data: "Genesis block",
-          previousHash: "0",
-          hash: "0",
-          nonce: 0
-        }
-      ])
-    );
-  };
-
-  this.getLatestBlock = function() {
-    var chain = _this3.props.chain;
-
-    var latestBlock = chain[chain.length - 1];
-    return latestBlock;
-  };
-
-  this.addBlock = function() {
-    var distributedChain = _this3.state.distributedChain;
-    var _props4 = _this3.props,
-      chain = _props4.chain,
-      updateChain = _props4.updateChain;
-
-    if (chain.length < 1) {
-      _this3.createGenesisBlock();
-      return false;
-    }
-
-    var latestBlock = _this3.getLatestBlock();
-
-    var newBlockData = {
-      index: latestBlock.index + 1,
-      timestamp: _this3.getCurrentTime(),
-      data: "You have recieved " + (latestBlock.index + 1) + " Devocoin",
-      previousHash: latestBlock.hash
-    };
-
-    var generatedBlockData = _this3.mineBlock(newBlockData);
-
-    var newBlock = _extends({}, newBlockData, generatedBlockData);
-
-    updateChain([].concat(_toConsumableArray(chain)).concat([newBlock]));
-    _this3.setState({
-      distributedChain:
-        distributedChain.length < 1
-          ? [].concat(_toConsumableArray(chain)).concat([newBlock])
-          : [].concat(_toConsumableArray(distributedChain)).concat([newBlock])
-    });
-  };
-
-  this.mineBlock = function(block) {
-    var latestBlock = _this3.getLatestBlock();
-    var difficulty = _this3.state.difficulty;
-
-    var nonce = latestBlock.nonce;
-    var hash = _this3.calculateHash(block);
-    while (hash.substring(0, difficulty) !== Array(difficulty + 1).join("0")) {
-      nonce++;
-      hash = _this3.calculateHash(_extends({}, block, { nonce: nonce }));
-      console.log("NONCE: " + nonce, "HASH: " + hash);
-    }
-
-    return { hash: hash, nonce: nonce };
-  };
-
-  this.isChainValid = function() {
-    var distributedChain = _this3.state.distributedChain;
-    var _props5 = _this3.props,
-      chain = _props5.chain,
-      _props5$notify = _props5.notify,
-      notify = _props5$notify === undefined ? function() {} : _props5$notify;
-
-    var prevBlock = _this3.getLatestBlock();
-    console.log(chain);
-
-    for (var i = 1; i < chain.length; i++) {
-      var currentBlock = chain[i];
-      var previousBlock = chain[i - 1];
-
-      if (
-        currentBlock.hash !== _this3.calculateHash(currentBlock) ||
-        currentBlock.previousHash !== previousBlock.hash ||
-        distributedChain.length !== chain.length
-      ) {
-        notify({
-          title: "Woah!",
-          message:
-            distributedChain.length !== chain.length
-              ? "Hold on, your chain does not match the other chains on the network.."
-              : "This chain has been altered from it's original state. Check block: " +
-                i
-        });
-        return false;
-      }
-    }
-    notify({
-      title: "Great!",
-      message: "All the blocks in this chain are valid."
-    });
-    return true;
-  };
-
-  this.deleteBlock = function(index) {
-    var _props6 = _this3.props,
-      chain = _props6.chain,
-      updateChain = _props6.updateChain;
-
-    var filteredChain = chain.filter(function(block) {
-      return block.index !== index;
-    });
-    updateChain(filteredChain);
-  };
-};
 
 Blockchain.propTypes = {};
 
