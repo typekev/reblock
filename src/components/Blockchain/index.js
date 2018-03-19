@@ -203,10 +203,6 @@ var Blockchain = (function(_React$Component) {
         nonce++;
         hash = _this.calculateHash(_extends({}, block, { nonce: nonce }));
       }
-      console.log(
-        "currentBlockData HASH ADDNEW",
-        _extends({}, block, { nonce: nonce })
-      );
       return { hash: hash, nonce: nonce };
     };
 
@@ -218,7 +214,10 @@ var Blockchain = (function(_React$Component) {
         notify =
           _this$props3$notify === undefined
             ? function() {}
-            : _this$props3$notify;
+            : _this$props3$notify,
+        chainAlteredErrorMessage = _this$props3.chainAlteredErrorMessage,
+        chainLengthErrorMessage = _this$props3.chainLengthErrorMessage,
+        chainValidMessage = _this$props3.chainValidMessage;
 
       var prevBlock = _this.getLatestBlock();
 
@@ -241,21 +240,29 @@ var Blockchain = (function(_React$Component) {
           currentBlock.previousHash !== previousBlock.hash ||
           distributedChain.length !== chain.length
         ) {
-          notify({
-            title: "Woah!",
-            message:
-              distributedChain.length !== chain.length
-                ? "Hold on, your chain does not match the other chains on the network.."
-                : "This chain has been altered from it's original state. Check block: " +
-                  i
-          });
+          notify(
+            distributedChain.length === chain.length
+              ? chainAlteredErrorMessage || {
+                  title: "Woah!",
+                  message:
+                    "This chain has been altered from it's original state. Check block: " +
+                    i
+                }
+              : chainLengthErrorMessage || {
+                  title: "Woah!",
+                  message:
+                    "Hold on, your chain does not match the other chains on the network.."
+                }
+          );
           return false;
         }
       }
-      notify({
-        title: "Great!",
-        message: "All the blocks in this chain are valid."
-      });
+      notify(
+        chainValidMessage || {
+          title: "Great!",
+          message: "All the blocks in this chain are valid."
+        }
+      );
       return true;
     };
 
