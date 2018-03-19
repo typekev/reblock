@@ -4,13 +4,20 @@
   "description":
     "A tiny library to help anyone understand the basics of Blockchain",
   "main": "index.js",
-  "repository": "https://github.com/typekev/reblock",
-  "author": "Kevin Gonzalez",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/typekev/reblock.git"
+  },
+  "author": "Kevin Gonzalez <kev@typekev.com> (http://typekev.com)",
   "license": "MIT",
   "dependencies": {
     "react": "^15.6.1",
     "react-dom": "^15.6.1",
     "moment": "^2.21.0",
     "crypto-js": "^3.1.9-1"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/typekev/reblock/issues"
+  },
+  "homepage": "https://github.com/typekev/reblock#readme"
 }
