@@ -203,6 +203,10 @@ var Blockchain = (function(_React$Component) {
         nonce++;
         hash = _this.calculateHash(_extends({}, block, { nonce: nonce }));
       }
+      console.log(
+        "currentBlockData HASH ADDNEW",
+        _extends({}, block, { nonce: nonce })
+      );
       return { hash: hash, nonce: nonce };
     };
 
@@ -289,6 +293,18 @@ var Blockchain = (function(_React$Component) {
       key: "componentWillMount",
       value: function componentWillMount() {
         this.addBlock();
+      }
+    },
+    {
+      key: "componentWillReceiveProps",
+      value: function componentWillReceiveProps(nextProps) {
+        var difficulty = nextProps.difficulty;
+
+        if (difficulty && difficulty !== this.state.difficulty) {
+          this.setState({
+            difficulty: difficulty
+          });
+        }
       }
     },
     {
