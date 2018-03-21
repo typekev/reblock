@@ -166,7 +166,7 @@ class Blockchain extends React.Component {
         {React.cloneElement(genButton, { onClick: this.addBlock })}
         {React.cloneElement(valButton, {
           onClick: this.isChainValid,
-          disabled: chain.length < 2
+          disabled: valButton.props.disabled || chain.length < 2
         })}
         {chain.map((b, i) =>
           React.cloneElement(block, {
