@@ -339,7 +339,7 @@ var Blockchain = (function(_React$Component) {
           _react2.default.cloneElement(genButton, { onClick: this.addBlock }),
           _react2.default.cloneElement(valButton, {
             onClick: this.isChainValid,
-            disabled: chain.length < 2
+            disabled: valButton.props.disabled || chain.length < 2
           }),
           chain.map(function(b, i) {
             return _react2.default.cloneElement(
